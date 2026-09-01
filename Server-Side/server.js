@@ -5,15 +5,9 @@ import helmet from "helmet";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 
-import connectDB from "./configs/connectDB.js";
+import testMySQLConnection from "./configs/connectDB.js";
 import authRoute from "./routes/authRoute.js"
-import createDefaultAdmin from "./controllers/createDefaultAdmin.js";
-import adminSettingRoutes from "./routes/adminRoutes/settingsRoute.js"
-import adminDashboardRoutes from "./routes/adminRoutes/overviewRoute.js";
-import adminTreatmentRoutes from "./routes/adminRoutes/treatmentRoute.js";
-import adminPatientRoute from "./routes/adminRoutes/patientRoute.js";
 import appointmentRoutes from "./routes/appointmentRoute.js";
-
 
 dotenv.config();
 
@@ -21,8 +15,9 @@ const app = express();
 
 const allowedOrigins = [
     "http://localhost:5173",
-     "http://localhost:5174",
+    "http://localhost:5174",
     "http://localhost:5020",
+    "http://localhost:8000",
 ].filter(Boolean);
 
 app.use(
@@ -54,27 +49,20 @@ app.get("/", (req, res) => {
 });
 
 // Routes
-app.use("/api/auth",authRoute);
-app.use("/api/admin",adminSettingRoutes);
-
-// Admin Routes
-app.use("/api/admin/dashboard",adminDashboardRoutes);
-app.use("/api/admin/treatment",adminTreatmentRoutes);
-app.use("/api/admin/patient",adminPatientRoute);
+app.use("/api/auth", authRoute);
 app.use("/api/appointments", appointmentRoutes);
-
-createDefaultAdmin();
 
 const startServer = async () => {
     try {
-        await connectDB();
+        await testMySQLConnection();
         const port = process.env.PORT || 5020;
-        app.listen(port,()=>{
-            console.log(`Server running on port ${port}`);
+        app.listen(port, () => {
+            console.log(`🚀 Server running on port ${port}`);
         })
     } catch (err) {
         console.error("Startup failed:", err);
         process.exit(1);
     }
 };
+
 startServer();
