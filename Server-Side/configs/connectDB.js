@@ -1,19 +1,9 @@
-import mongoose from "mongoose";
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const connectDB = async () =>{
-    try{
-        await mongoose.connect(process.env.DB_URI);
-        console.log("DataBase Connected Successfully");
-    }catch(err){
-        console.error("DataBasr Connection Failed", err.message);
-        process.exit(1);
-    }
-};
-
+// MySQL Pool Connection
 export const mysqlPool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -25,4 +15,16 @@ export const mysqlPool = mysql.createPool({
   queueLimit: 0
 });
 
-export default connectDB;
+// Test MySQL Connection
+const testMySQLConnection = async () => {
+  try {
+    const connection = await mysqlPool.getConnection();
+    console.log("✅ MySQL Database Connected Successfully");
+    connection.release();
+  } catch (err) {
+    console.error("❌ MySQL Connection Failed:", err.message);
+    process.exit(1);
+  }
+};
+
+export default testMySQLConnection;
