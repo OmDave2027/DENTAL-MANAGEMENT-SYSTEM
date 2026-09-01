@@ -12,6 +12,8 @@ import adminSettingRoutes from "./routes/adminRoutes/settingsRoute.js"
 import adminDashboardRoutes from "./routes/adminRoutes/overviewRoute.js";
 import adminTreatmentRoutes from "./routes/adminRoutes/treatmentRoute.js";
 import adminPatientRoute from "./routes/adminRoutes/patientRoute.js";
+import appointmentRoutes from "./routes/appointmentRoute.js";
+
 
 dotenv.config();
 
@@ -59,7 +61,7 @@ app.use("/api/admin",adminSettingRoutes);
 app.use("/api/admin/dashboard",adminDashboardRoutes);
 app.use("/api/admin/treatment",adminTreatmentRoutes);
 app.use("/api/admin/patient",adminPatientRoute);
-
+app.use("/api/appointments", appointmentRoutes);
 
 createDefaultAdmin();
 
