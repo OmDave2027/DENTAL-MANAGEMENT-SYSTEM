@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 
 import testMySQLConnection from "./configs/connectDB.js";
 import authRoute from "./routes/authRoute.js"
+import createDefaultAdmin from "./controllers/createDefaultAdmin.js";
 import appointmentRoutes from "./routes/appointmentRoute.js";
 
 dotenv.config();
@@ -55,6 +56,7 @@ app.use("/api/appointments", appointmentRoutes);
 const startServer = async () => {
     try {
         await testMySQLConnection();
+        await createDefaultAdmin();
         const port = process.env.PORT || 5020;
         app.listen(port, () => {
             console.log(`🚀 Server running on port ${port}`);
