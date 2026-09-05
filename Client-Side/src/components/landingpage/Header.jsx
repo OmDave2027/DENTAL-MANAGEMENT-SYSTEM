@@ -32,12 +32,12 @@ const Navbar = () => {
             <div className="h-10 overflow-hidden rounded-xl transition-transform duration-500 group-hover:scale-110">
               <img
                 src="/images/Dental_ORTHODONTIST1-LOGO - Copy.jpg"
-                alt="Panda Smile Logo"
+                alt="DC Smile Logo"
                 className="h-full w-auto object-contain"
               />
             </div>
             <div className="hidden sm:flex flex-col">
-              <span className="block text-xl font-black tracking-tight leading-none mb-0.5 text-slate-900">Panda Smile</span>
+              <span className="block text-xl font-black tracking-tight leading-none mb-0.5 text-slate-900">DC Smile</span>
               <span className="block text-[12px] font-black uppercase tracking-[0.25em] text-[#f37121]">Aligner & Braces</span>
             </div>
           </Link>
