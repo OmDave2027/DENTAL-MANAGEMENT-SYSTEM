@@ -8,6 +8,9 @@ import StepPayment from './components/StepPayment';
 import StepSchedule from './components/StepSchedule';
 import { APPOINTMENT_FEE, STEP_CONTENT } from './constants';
 import { generateTxnId } from './utils';
+import toast from 'react-hot-toast';
+import { useAuth } from '@/context/AuthContext';
+import { apiRequest } from '@/lib/api';
 
 const BookAppointments = () => {
   const [step, setStep] = useState(1);
@@ -20,6 +23,7 @@ const BookAppointments = () => {
   const [payData, setPayData] = useState({});
   const [upiStatus, setUpiStatus] = useState('');
   const [selectedUpiApp, setSelectedUpiApp] = useState('');
+  const { user, accessToken } = useAuth();
 
   const detailChange = (key, value) => {
     setDetails((prev) => ({ ...prev, [key]: value }));
@@ -58,9 +62,32 @@ const BookAppointments = () => {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const next = () => {
+  const next = async () => {
     if (!validate()) return;
-    if (step === 3) setGeneratedTxn(generateTxnId());
+    if (step === 3) {
+      if (!user || !accessToken) {
+        toast.error('Please log in before booking an appointment.');
+        return;
+      }
+
+      try {
+        const appointmentTime = schedule.time.match(/^\d{2}:\d{2}/)?.[0];
+        await apiRequest('/api/appointments', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({
+            appointment_date: schedule.date,
+            appointment_time: appointmentTime,
+            appointment_type: schedule.service || 'General consultation',
+            notes: schedule.notes || null,
+          }),
+        });
+        setGeneratedTxn(generateTxnId());
+      } catch (error) {
+        toast.error(error.message);
+        return;
+      }
+    }
     setStep((prev) => Math.min(prev + 1, 4));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

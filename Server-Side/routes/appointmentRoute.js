@@ -56,9 +56,12 @@ router.get("/:id", authMiddleware, async (req, res) => {
 
 // CREATE appointment
 router.post("/", authMiddleware, [
-  body('appointment_date').isISO8601().withMessage('Valid date is required'),
-  body('appointment_time').matches(/^\d{2}:\d{2}$/).withMessage('Valid time (HH:MM) is required'),
-  body('appointment_type').notEmpty().withMessage('Appointment type is required')
+  body().custom((value) => {
+    if (!(value.appointment_date || value.date)) throw new Error("Valid date is required");
+    if (!(value.appointment_time || value.time)) throw new Error("Valid time is required");
+    if (!(value.appointment_type || value.service)) throw new Error("Appointment type is required");
+    return true;
+  }),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -67,13 +70,29 @@ router.post("/", authMiddleware, [
     }
 
     const userId = req.userId;  // ✅ Fixed: Use req.userId from authMiddleware
-    const { appointment_date, appointment_time, appointment_type, dentist_name, notes } = req.body;
+    const {
+      appointment_date = req.body.date,
+      appointment_time: rawTime = req.body.time,
+      appointment_type = req.body.service,
+      dentist_name,
+      notes,
+    } = req.body;
+    if (!/^\d{2}:\d{2}$/.test(rawTime)) {
+      const match = rawTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      if (!match) return res.status(400).json({ message: "Valid time is required" });
+      let hour = Number(match[1]);
+      if (match[3].toUpperCase() === "PM" && hour !== 12) hour += 12;
+      if (match[3].toUpperCase() === "AM" && hour === 12) hour = 0;
+      req.body.appointment_time = `${String(hour).padStart(2, "0")}:${match[2]}`;
+    } else {
+      req.body.appointment_time = rawTime;
+    }
 
     const connection = await mysqlPool.getConnection();
 
     const [result] = await connection.query(
       'INSERT INTO appointments (user_id, appointment_date, appointment_time, appointment_type, dentist_name, notes) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, appointment_date, appointment_time, appointment_type, dentist_name || null, notes || null]
+      [userId, appointment_date, req.body.appointment_time, appointment_type, dentist_name || null, notes || null]
     );
 
     connection.release();
