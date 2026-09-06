@@ -71,6 +71,7 @@ function LoginForm() {
 
 function SignupForm() {
   const { signup } = useAuth();
+  const navigate = useNavigate();
   const [data, setData] = useState({
     firstname: "",
     lastname: "",
@@ -87,13 +88,16 @@ function SignupForm() {
       return;
     }
     setLoading(true);
-    await signup({
+    const created = await signup({
       Firstname: data.firstname.trim(),
       Lastname: data.lastname.trim(),
       email: data.email.trim(),
       password: data.password,
     });
-    setData({ firstname: "", lastname: "", email: "", password: "", confirmpassword: "" });
+    if (created) {
+      setData({ firstname: "", lastname: "", email: "", password: "", confirmpassword: "" });
+      navigate("/login");
+    }
     setLoading(false);
   };
 

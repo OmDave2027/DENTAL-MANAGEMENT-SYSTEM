@@ -14,6 +14,12 @@ export default async function createDefaultAdmin() {
 
     const connection = await mysqlPool.getConnection();
 
+    // Older installations were created before roles were added to the schema.
+    // Keep startup backwards-compatible so the default admin can be created.
+    await connection.query(
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS role ENUM('ADMIN', 'PATIENT') NOT NULL DEFAULT 'PATIENT'"
+    );
+
     // Check if admin already exists
     const [existingAdmin] = await connection.query(
       'SELECT * FROM users WHERE email = ? AND role = ?',

@@ -8,7 +8,12 @@ const router = express.Router();
 
 // SIGN UP
 router.post("/signup", [
-  body('full_name').notEmpty().withMessage('Full name is required'),
+  body().custom((value) => {
+    if (!(value.full_name || (value.Firstname && value.Lastname))) {
+      throw new Error("First and last name are required");
+    }
+    return true;
+  }),
   body('email').isEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('phone').optional().isMobilePhone().withMessage('Valid phone number required')
@@ -19,12 +24,26 @@ router.post("/signup", [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { full_name, email, password, phone, date_of_birth, address, city, state, zip_code } = req.body;
+    const {
+      full_name,
+      Firstname,
+      Lastname,
+      email,
+      password,
+      phone,
+      date_of_birth,
+      address,
+      city,
+      state,
+      zip_code,
+    } = req.body;
+    const name = full_name || `${Firstname} ${Lastname}`.trim();
+    const normalizedEmail = email.trim().toLowerCase();
 
     const connection = await mysqlPool.getConnection();
 
     // Check if user already exists
-    const [existingUser] = await connection.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [existingUser] = await connection.query('SELECT id FROM users WHERE email = ?', [normalizedEmail]);
     if (existingUser.length > 0) {
       connection.release();
       return res.status(409).json({ message: 'User already exists' });
@@ -36,7 +55,7 @@ router.post("/signup", [
     // Insert user
     await connection.query(
       'INSERT INTO users (full_name, email, password_hash, phone, date_of_birth, address, city, state, zip_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [full_name, email, hashedPassword, phone, date_of_birth, address, city, state, zip_code]
+      [name, normalizedEmail, hashedPassword, phone || null, date_of_birth || null, address || null, city || null, state || null, zip_code || null]
     );
 
     connection.release();
@@ -60,11 +79,12 @@ router.post("/login", [
     }
 
     const { email, password } = req.body;
+    const normalizedEmail = email.trim().toLowerCase();
 
     const connection = await mysqlPool.getConnection();
 
     // Find user
-    const [users] = await connection.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [users] = await connection.query('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
     connection.release();
 
     if (users.length === 0) {
@@ -81,8 +101,8 @@ router.post("/login", [
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET,
+      { id: user.id, email: user.email, role: user.role || "PATIENT" },
+      process.env.ACCESS_TOKEN_SECRET,
       { expiresIn: '24h' }
     );
 
@@ -92,8 +112,11 @@ router.post("/login", [
       user: {
         id: user.id,
         full_name: user.full_name,
+        Firstname: user.full_name.split(" ")[0],
+        Lastname: user.full_name.split(" ").slice(1).join(" "),
         email: user.email,
-        phone: user.phone
+        phone: user.phone,
+        role: user.role || "PATIENT"
       }
     });
   } catch (error) {
